@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Proyectos</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabler-icons@2/tabler-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #0052a3;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --border: #dee2e6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto Mono', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px 0;
+            margin-bottom: 40px;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .header-title i {
+            font-size: 32px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f0f2f5;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: #f0f2f5;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-edit {
+            background: #17a2b8;
+        }
+
+        .btn-edit:hover {
+            background: #138496;
+        }
+
+        .btn-small {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .btn-icon {
+            padding: 8px;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #00d4ff);
+        }
+
+        .project-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .project-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1a1a1a;
+        }
+
+        .project-card p {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .project-meta {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-progress {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-blocked {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .progress-container {
+            margin: 16px 0;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), #20c997);
+            transition: width 0.5s ease;
+        }
+
+        .project-dates {
+            font-size: 12px;
+            color: #999;
+            margin: 12px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .project-actions button {
+            flex: 1;
+        }
+
+        .edit-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0,102,204,0.1);
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--primary);
+        }
+
+        .edit-icon:hover {
+            background: rgba(0,102,204,0.2);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal h2 {
+            margin-bottom: 24px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .form-actions button {
+            flex: 1;
+        }
+
+        .project-detail {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 24px;
+        }
+
+        .detail-header h2 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .detail-header-desc {
+            color: #666;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .detail-header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .detail-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .info-box label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .info-box p {
+            font-size: 16px;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .info-box a {
+            color: var(--primary);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .info-box a:hover {
+            text-decoration: underline;
+        }
+
+        .tasks-section {
+            margin-top: 32px;
+        }
+
+        .tasks-section h3 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tasks-summary {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .summary-item strong {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            background: #f8f9fa;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-content h4 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            word-break: break-word;
+            color: #1a1a1a;
+        }
+
+        .task-content.completed h4 {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .task-desc {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .task-url {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .task-url a {
+            color: var(--primary);
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .task-url a:hover {
+            text-decoration: underline;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .task-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-todo {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .badge-progress-task {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-done {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-priority-alta {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-priority-media {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-priority-baja {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-actions button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .back-button {
+            margin-bottom: 24px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .user-selector {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .user-selector h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+        }
+
+        .user-selector p {
+            color: #666;
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+
+        .user-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .user-btn {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        i {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createClient } = window.supabase;
+
+        const SUPABASE_URL = 'https://lxuqrnmnbozuqbutcehg.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_j2sXGY7gDh74lbNAuGlFLA_T9CRpJ2Z';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const USUARIOS = ['JIA', 'OB', 'TA', 'LM'];
+
+        function App() {
+            const [currentUser, setCurrentUser] = useState(null);
+            const [view, setView] = useState('list');
+            const [proyectos, setProyectos] = useState([]);
+            const [tareas, setTareas] = useState([]);
+            const [selectedProyecto, setSelectedProyecto] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [showTaskModal, setShowTaskModal] = useState(false);
+            const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+            const [showEditTaskModal, setShowEditTaskModal] = useState(false);
+            const [loading, setLoading] = useState(true);
+            const [editingProject, setEditingProject] = useState(null);
+            const [editingTask, setEditingTask] = useState(null);
+            
+            const [formData, setFormData] = useState({
+                nombre: '',
+                descripcion: '',
+                fecha_inicio: '',
+                fecha_vencimiento: '',
+                responsable: '',
+                prioridad: 'Media',
+                estado: 'En progreso',
+                url: '',
+                notas: '',
+                compartir_con: [],
+            });
+
+            const [taskFormData, setTaskFormData] = useState({
+                nombre: '',
+                descripcion: '',
+                responsable: '',
+                fecha_vencimiento: '',
+                prioridad: 'Media',
+                estado: 'To do',
+                url: '',
+                notas: '',
+            });
+
+            useEffect(() => {
+                const user = localStorage.getItem('currentUser');
+                if (user) {
+                    setCurrentUser(user);
+                    loadProyectos(user);
+                }
+            }, []);
+
+            const selectUser = (usuario) => {
+                localStorage.setItem('currentUser', usuario);
+                setCurrentUser(usuario);
+                loadProyectos(usuario);
+            };
+
+            const changeUser = () => {
+                localStorage.removeItem('currentUser');
+                setCurrentUser(null);
+                setView('list');
+            };
+
+            const loadProyectos = async (usuario) => {
+                setLoading(true);
+                try {
+                    const { data, error } = await supabase
+                        .from('proyectos')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+
+                    const filtrados = data.filter(p => {
+                        const compartirCon = p.compartir_con || [];
+                        return compartirCon.includes(usuario);
+                    });
+
+                    setProyectos(filtrados);
+                } catch (error) {
+                    console.error('Error loading proyectos:', error);
+                }
+                setLoading(false);
+            };
+
+            const loadTareas = async (proyectoId) => {
+                try {
+                    const { data, error } = await supabase
+                        .from('tareas')
+                        .select('*')
+                        .eq('proyecto_id', proyectoId)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    setTareas(data || []);
+                } catch (error) {
+                    console.error('Error loading tareas:', error);
+                }
+            };
+
+            const handleCreateProyecto = async () => {
+                if (!formData.nombre.trim()) {
+                    alert('Por favor ingresa un nombre para el proyecto');
+                    return;
+                }
+
+                try {
+                    const compartirCon = formData.compartir_con.length > 0 ? formData.compartir_con : [currentUser];
+                    
+                    const { data, error } = await supabase
+                        .from('proyectos')
+                        .insert([{
+                            ...formData,
+                            compartir_con: compartirCon,
+                        }])
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    setProyectos([data[0], ...proyectos]);
+                    resetFormData();
+                    setShowModal(false);
+                } catch (error) {
+                    console.error('Error creating proyecto:', error);
+                    alert('Error al crear el proyecto');
+                }
+            };
+
+            const handleEditProyecto = async () => {
+                if (!editingProject.nombre.trim()) {
+                    alert('Por favor ingresa un nombre para el proyecto');
+                    return;
+                }
+
+                try {
+                    const compartirCon = editingProject.compartir_con || [currentUser];
+                    
+                    const { error } = await supabase
+                        .from('proyectos')
+                        .update({
+                            nombre: editingProject.nombre,
+                            descripcion: editingProject.descripcion,
+                            fecha_inicio: editingProject.fecha_inicio,
+                            fecha_vencimiento: editingProject.fecha_vencimiento,
+                            responsable: editingProject.responsable,
+                            prioridad: editingProject.prioridad,
+                            estado: editingProject.estado,
+                            url: editingProject.url,
+                            notas: editingProject.notas,
+                            compartir_con: compartirCon,
+                        })
+                        .eq('id', editingProject.id);
+                    
+                    if (error) throw error;
+                    
+                    const updatedProyectos = proyectos.map(p =>
+                        p.id === editingProject.id ? editingProject : p
+                    );
+                    setProyectos(updatedProyectos);
+                    
+                    if (selectedProyecto?.id === editingProject.id) {
+                        setSelectedProyecto(editingProject);
+                    }
+                    
+                    setShowEditProjectModal(false);
+                    setEditingProject(null);
+                } catch (error) {
+                    console.error('Error updating proyecto:', error);
+                    alert('Error al actualizar el proyecto');
+                }
+            };
+
+            const handleCreateTarea = async () => {
+                if (!taskFormData.nombre.trim()) {
+                    alert('Por favor ingresa un nombre para la tarea');
+                    return;
+                }
+
+                try {
+                    const { data, error } = await supabase
+                        .from('tareas')
+                        .insert([{
+                            ...taskFormData,
+                            proyecto_id: selectedProyecto.id,
+                        }])
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    setTareas([data[0], ...tareas]);
+                    resetTaskFormData();
+                    setShowTaskModal(false);
+                } catch (error) {
+                    console.error('Error creating tarea:', error);
+                    alert('Error al crear la tarea');
+                }
+            };
+
+            const handleToggleTarea = async (tarea) => {
+                try {
+                    const { error } = await supabase
+                        .from('tareas')
+                        .update({ completado: !tarea.completado })
+                        .eq('id', tarea.id);
+                    
+                    if (error) throw error;
+                    
+                    setTareas(tareas.map(t =>
+                        t.id === tarea.id ? { ...t, completado: !t.completado } : t
+                    ));
+                } catch (error) {
+                    console.error('Error updating tarea:', error);
+                }
+            };
+
+            const handleEditTarea = async () => {
+                if (!editingTask.nombre.trim()) {
+                    alert('Por favor ingresa un nombre para la tarea');
+                    return;
+                }
+
+                try {
+                    const { error } = await supabase
+                        .from('tareas')
+                        .update({
+                            nombre: editingTask.nombre,
+                            descripcion: editingTask.descripcion,
+                            estado: editingTask.estado,
+                            prioridad: editingTask.prioridad,
+                            responsable: editingTask.responsable,
+                            fecha_vencimiento: editingTask.fecha_vencimiento,
+                            url: editingTask.url,
+                            notas: editingTask.notas,
+                        })
+                        .eq('id', editingTask.id);
+                    
+                    if (error) throw error;
+                    
+                    setTareas(tareas.map(t =>
+                        t.id === editingTask.id ? editingTask : t
+                    ));
+                    
+                    setShowEditTaskModal(false);
+                    setEditingTask(null);
+                } catch (error) {
+                    console.error('Error updating tarea:', error);
+                    alert('Error al actualizar la tarea');
+                }
+            };
+
+            const handleDeleteProyecto = async (id) => {
+                if (!confirm('¿Estás seguro de que quieres eliminar este proyecto? Se eliminarán todas sus tareas.')) {
+                    return;
+                }
+
+                try {
+                    const { error } = await supabase
+                        .from('proyectos')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) throw error;
+                    
+                    setProyectos(proyectos.filter(p => p.id !== id));
+                    if (selectedProyecto?.id === id) {
+                        setView('list');
+                        setSelectedProyecto(null);
+                    }
+                } catch (error) {
+                    console.error('Error deleting proyecto:', error);
+                    alert('Error al eliminar el proyecto');
+                }
+            };
+
+            const handleDeleteTarea = async (id) => {
+                if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
+                    return;
+                }
+
+                try {
+                    const { error } = await supabase
+                        .from('tareas')
+                        .delete()
+                        .eq('id', id);
+                    
+                    if (error) throw error;
+                    
+                    setTareas(tareas.filter(t => t.id !== id));
+                } catch (error) {
+                    console.error('Error deleting tarea:', error);
+                    alert('Error al eliminar la tarea');
+                }
+            };
+
+            const resetFormData = () => {
+                setFormData({
+                    nombre: '',
+                    descripcion: '',
+                    fecha_inicio: '',
+                    fecha_vencimiento: '',
+                    responsable: '',
+                    prioridad: 'Media',
+                    estado: 'En progreso',
+                    url: '',
+                    notas: '',
+                    compartir_con: [currentUser],
+                });
+            };
+
+            const resetTaskFormData = () => {
+                setTaskFormData({
+                    nombre: '',
+                    descripcion: '',
+                    responsable: '',
+                    fecha_vencimiento: '',
+                    prioridad: 'Media',
+                    estado: 'To do',
+                    url: '',
+                    notas: '',
+                });
+            };
+
+            const getEstadoBadge = (estado) => {
+                const badges = {
+                    'En progreso': 'badge-progress',
+                    'Bloqueado': 'badge-blocked',
+                    'Completado': 'badge-completed',
+                };
+                return badges[estado] || 'badge-progress';
+            };
+
+            const getTareaEstadoBadge = (estado) => {
+                const badges = {
+                    'To do': 'badge-todo',
+                    'En progreso': 'badge-progress-task',
+                    'Hecho': 'badge-done',
+                };
+                return badges[estado] || 'badge-todo';
+            };
+
+            const calcularProgreso = () => {
+                if (tareas.length === 0) return 0;
+                const completadas = tareas.filter(t => t.completado).length;
+                return Math.round((completadas / tareas.length) * 100);
+            };
+
+            const getResumenTareas = () => {
+                return {
+                    total: tareas.length,
+                    completadas: tareas.filter(t => t.completado).length,
+                    pendientes: tareas.filter(t => !t.completado).length,
+                    todo: tareas.filter(t => t.estado === 'To do').length,
+                    progreso: tareas.filter(t => t.estado === 'En progreso').length,
+                    hecho: tareas.filter(t => t.estado === 'Hecho').length,
+                };
+            };
+
+            if (!currentUser) {
+                return (
+                    <div className="app-container" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px'}}>
+                        <div className="user-selector">
+                            <h2>Selecciona tu usuario</h2>
+                            <p>Elige quién eres para ver tus proyectos compartidos</p>
+                            <div className="user-buttons">
+                                {USUARIOS.map(usuario => (
+                                    <button key={usuario} className="user-btn" onClick={() => selectUser(usuario)}>
+                                        <i className="ti ti-user"></i> {usuario}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (loading) {
+                return (
+                    <div className="container" style={{paddingTop: '80px'}}>
+                        <div className="loading">
+                            <i className="ti ti-loader"></i>
+                            <p>Cargando tus proyectos...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'detail' && selectedProyecto) {
+                const resumen = getResumenTareas();
+                const progreso = calcularProgreso();
+
+                return (
+                    <>
+                        <header>
+                            <div className="container">
+                                <div className="header-title">
+                                    <i className="ti ti-briefcase"></i>
+                                    <h1>Gestor de Proyectos</h1>
+                                </div>
+                                <div className="user-info">
+                                    <span>Usuario:</span>
+                                    <span className="user-badge">{currentUser}</span>
+                                    <button className="btn btn-secondary btn-small" onClick={changeUser}>
+                                        <i className="ti ti-switch"></i> Cambiar
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        <div className="container">
+                            <button className="btn btn-secondary back-button" onClick={() => {
+                                setView('list');
+                                setSelectedProyecto(null);
+                            }}>
+                                <i className="ti ti-arrow-left"></i> Volver a proyectos
+                            </button>
+
+                            <div className="project-detail">
+                                <div className="detail-header">
+                                    <div>
+                                        <h2>{selectedProyecto.nombre}</h2>
+                                        {selectedProyecto.descripcion && <p className="detail-header-desc">{selectedProyecto.descripcion}</p>}
+                                    </div>
+                                    <div className="detail-header-actions">
+                                        <button className="btn btn-edit btn-small" onClick={() => {
+                                            setEditingProject(selectedProyecto);
+                                            setShowEditProjectModal(true);
+                                        }}>
+                                            <i className="ti ti-edit"></i> Editar
+                                        </button>
+                                        <button className="btn btn-danger btn-small" onClick={() => handleDeleteProyecto(selectedProyecto.id)}>
+                                            <i className="ti ti-trash"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="detail-info">
+                                    <div className="info-box">
+                                        <label>Estado</label>
+                                        <p>{selectedProyecto.estado}</p>
+                                    </div>
+                                    <div className="info-box">
+                                        <label>Responsable</label>
+                                        <p>{selectedProyecto.responsable || '—'}</p>
+                                    </div>
+                                    <div className="info-box">
+                                        <label>Prioridad</label>
+                                        <p>{selectedProyecto.prioridad}</p>
+                                    </div>
+                                    <div className="info-box">
+                                        <label>Inicio</label>
+                                        <p>{selectedProyecto.fecha_inicio ? new Date(selectedProyecto.fecha_inicio).toLocaleDateString('es-AR') : '—'}</p>
+                                    </div>
+                                    <div className="info-box">
+                                        <label>Vencimiento</label>
+                                        <p>{selectedProyecto.fecha_vencimiento ? new Date(selectedProyecto.fecha_vencimiento).toLocaleDateString('es-AR') : '—'}</p>
+                                    </div>
+                                    <div className="info-box">
+                                        <label>Progreso</label>
+                                        <div className="progress-container">
+                                            <div className="progress-bar">
+                                                <div className="progress-fill" style={{width: progreso + '%'}}></div>
+                                            </div>
+                                            <p style={{marginTop: '8px', fontWeight: '700'}}>{progreso}%</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {selectedProyecto.url && (
+                                    <div className="info-box" style={{marginBottom: '16px'}}>
+                                        <label>URL del Proyecto</label>
+                                        <p><a href={selectedProyecto.url} target="_blank" rel="noopener noreferrer">{selectedProyecto.url}</a></p>
+                                    </div>
+                                )}
+
+                                {selectedProyecto.notas && (
+                                    <div className="info-box" style={{marginBottom: '16px'}}>
+                                        <label>Notas</label>
+                                        <p style={{whiteSpace: 'pre-wrap'}}>{selectedProyecto.notas}</p>
+                                    </div>
+                                )}
+
+                                <div className="tasks-section">
+                                    <h3>
+                                        <span>Tareas ({resumen.total})</span>
+                                        <button className="btn btn-small" onClick={() => setShowTaskModal(true)}>
+                                            <i className="ti ti-plus"></i> Nueva Tarea
+                                        </button>
+                                    </h3>
+
+                                    <div className="tasks-summary">
+                                        <div className="summary-item"><strong>{resumen.completadas}/{resumen.total}</strong> completadas</div>
+                                        <div className="summary-item"><strong>{resumen.todo}</strong> por hacer</div>
+                                        <div className="summary-item"><strong>{resumen.progreso}</strong> en progreso</div>
+                                        <div className="summary-item"><strong>{resumen.hecho}</strong> hechas</div>
+                                    </div>
+
+                                    {tareas.length === 0 ? (
+                                        <div className="empty-state">
+                                            <i className="ti ti-inbox"></i>
+                                            <h3>No hay tareas aún</h3>
+                                            <p>Crea una para empezar</p>
+                                        </div>
+                                    ) : (
+                                        <div className="tasks-list">
+                                            {tareas.map(tarea => (
+                                                <div key={tarea.id} className={'task-item ' + (tarea.completado ? 'completed' : '')}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="task-checkbox"
+                                                        checked={tarea.completado}
+                                                        onChange={() => handleToggleTarea(tarea)}
+                                                    />
+                                                    <div className="task-content" style={{opacity: tarea.completado ? 0.6 : 1}}>
+                                                        <h4>{tarea.nombre}</h4>
+                                                        {tarea.descripcion && <p className="task-desc">{tarea.descripcion}</p>}
+                                                        {tarea.url && (
+                                                            <div className="task-url">
+                                                                <a href={tarea.url} target="_blank" rel="noopener noreferrer">
+                                                                    <i className="ti ti-link"></i> {tarea.url}
+                                                                </a>
+                                                            </div>
+                                                        )}
+                                                        {tarea.notas && <p className="task-desc" style={{color: '#999', fontStyle: 'italic'}}>📝 {tarea.notas}</p>}
+                                                        <div className="task-meta">
+                                                            <span className={`task-badge ${getTareaEstadoBadge(tarea.estado)}`}>
+                                                                {tarea.estado}
+                                                            </span>
+                                                            <span className={`task-badge badge-priority-${tarea.prioridad.toLowerCase()}`}>
+                                                                {tarea.prioridad}
+                                                            </span>
+                                                            {tarea.responsable && <span>👤 {tarea.responsable}</span>}
+                                                            {tarea.fecha_vencimiento && <span>📅 {new Date(tarea.fecha_vencimiento).toLocaleDateString('es-AR')}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div className="task-actions">
+                                                        <button 
+                                                            className="btn btn-edit btn-small btn-icon" 
+                                                            onClick={() => {
+                                                                setEditingTask(tarea);
+                                                                setShowEditTaskModal(true);
+                                                            }}
+                                                            title="Editar tarea"
+                                                        >
+                                                            <i className="ti ti-edit"></i>
+                                                        </button>
+                                                        <button className="btn btn-danger btn-small btn-icon" onClick={() => handleDeleteTarea(tarea.id)} title="Eliminar tarea">
+                                                            <i className="ti ti-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {showTaskModal && (
+                                <div className="modal-overlay" onClick={() => setShowTaskModal(false)}>
+                                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                        <h2>Nueva Tarea</h2>
+                                        
+                                        <div className="form-group">
+                                            <label>Nombre de la tarea *</label>
+                                            <input
+                                                type="text"
+                                                value={taskFormData.nombre}
+                                                onChange={(e) => setTaskFormData({...taskFormData, nombre: e.target.value})}
+                                                placeholder="Ej: Diseñar mockups"
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Descripción</label>
+                                            <textarea
+                                                value={taskFormData.descripcion}
+                                                onChange={(e) => setTaskFormData({...taskFormData, descripcion: e.target.value})}
+                                                placeholder="Detalles adicionales..."
+                                            />
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Estado</label>
+                                                <select
+                                                    value={taskFormData.estado}
+                                                    onChange={(e) => setTaskFormData({...taskFormData, estado: e.target.value})}
+                                                >
+                                                    <option>To do</option>
+                                                    <option>En progreso</option>
+                                                    <option>Hecho</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label>Prioridad</label>
+                                                <select
+                                                    value={taskFormData.prioridad}
+                                                    onChange={(e) => setTaskFormData({...taskFormData, prioridad: e.target.value})}
+                                                >
+                                                    <option>Baja</option>
+                                                    <option>Media</option>
+                                                    <option>Alta</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Responsable</label>
+                                            <select
+                                                value={taskFormData.responsable}
+                                                onChange={(e) => setTaskFormData({...taskFormData, responsable: e.target.value})}
+                                            >
+                                                <option value="">Sin asignar</option>
+                                                {USUARIOS.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Fecha de vencimiento</label>
+                                            <input
+                                                type="date"
+                                                value={taskFormData.fecha_vencimiento}
+                                                onChange={(e) => setTaskFormData({...taskFormData, fecha_vencimiento: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>URL (enlace a Drive, Figma, etc.)</label>
+                                            <input
+                                                type="url"
+                                                value={taskFormData.url}
+                                                onChange={(e) => setTaskFormData({...taskFormData, url: e.target.value})}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Notas</label>
+                                            <textarea
+                                                value={taskFormData.notas}
+                                                onChange={(e) => setTaskFormData({...taskFormData, notas: e.target.value})}
+                                                placeholder="Notas adicionales..."
+                                            />
+                                        </div>
+
+                                        <div className="form-actions">
+                                            <button className="btn" onClick={handleCreateTarea}>
+                                                <i className="ti ti-check"></i> Crear Tarea
+                                            </button>
+                                            <button className="btn btn-secondary" onClick={() => setShowTaskModal(false)}>
+                                                <i className="ti ti-x"></i> Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {showEditTaskModal && editingTask && (
+                                <div className="modal-overlay" onClick={() => setShowEditTaskModal(false)}>
+                                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                        <h2>Editar Tarea</h2>
+                                        
+                                        <div className="form-group">
+                                            <label>Nombre de la tarea *</label>
+                                            <input
+                                                type="text"
+                                                value={editingTask.nombre}
+                                                onChange={(e) => setEditingTask({...editingTask, nombre: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Descripción</label>
+                                            <textarea
+                                                value={editingTask.descripcion}
+                                                onChange={(e) => setEditingTask({...editingTask, descripcion: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Estado</label>
+                                                <select
+                                                    value={editingTask.estado}
+                                                    onChange={(e) => setEditingTask({...editingTask, estado: e.target.value})}
+                                                >
+                                                    <option>To do</option>
+                                                    <option>En progreso</option>
+                                                    <option>Hecho</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label>Prioridad</label>
+                                                <select
+                                                    value={editingTask.prioridad}
+                                                    onChange={(e) => setEditingTask({...editingTask, prioridad: e.target.value})}
+                                                >
+                                                    <option>Baja</option>
+                                                    <option>Media</option>
+                                                    <option>Alta</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Responsable</label>
+                                            <select
+                                                value={editingTask.responsable}
+                                                onChange={(e) => setEditingTask({...editingTask, responsable: e.target.value})}
+                                            >
+                                                <option value="">Sin asignar</option>
+                                                {USUARIOS.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Fecha de vencimiento</label>
+                                            <input
+                                                type="date"
+                                                value={editingTask.fecha_vencimiento}
+                                                onChange={(e) => setEditingTask({...editingTask, fecha_vencimiento: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>URL (enlace a Drive, Figma, etc.)</label>
+                                            <input
+                                                type="url"
+                                                value={editingTask.url}
+                                                onChange={(e) => setEditingTask({...editingTask, url: e.target.value})}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Notas</label>
+                                            <textarea
+                                                value={editingTask.notas}
+                                                onChange={(e) => setEditingTask({...editingTask, notas: e.target.value})}
+                                                placeholder="Notas adicionales..."
+                                            />
+                                        </div>
+
+                                        <div className="form-actions">
+                                            <button className="btn" onClick={handleEditTarea}>
+                                                <i className="ti ti-check"></i> Guardar
+                                            </button>
+                                            <button className="btn btn-secondary" onClick={() => setShowEditTaskModal(false)}>
+                                                <i className="ti ti-x"></i> Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {showEditProjectModal && editingProject && (
+                                <div className="modal-overlay" onClick={() => setShowEditProjectModal(false)}>
+                                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                        <h2>Editar Proyecto</h2>
+                                        
+                                        <div className="form-group">
+                                            <label>Nombre del proyecto *</label>
+                                            <input
+                                                type="text"
+                                                value={editingProject.nombre}
+                                                onChange={(e) => setEditingProject({...editingProject, nombre: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Descripción</label>
+                                            <textarea
+                                                value={editingProject.descripcion}
+                                                onChange={(e) => setEditingProject({...editingProject, descripcion: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Estado</label>
+                                                <select
+                                                    value={editingProject.estado}
+                                                    onChange={(e) => setEditingProject({...editingProject, estado: e.target.value})}
+                                                >
+                                                    <option>En progreso</option>
+                                                    <option>Bloqueado</option>
+                                                    <option>Completado</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label>Prioridad</label>
+                                                <select
+                                                    value={editingProject.prioridad}
+                                                    onChange={(e) => setEditingProject({...editingProject, prioridad: e.target.value})}
+                                                >
+                                                    <option>Baja</option>
+                                                    <option>Media</option>
+                                                    <option>Alta</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Responsable</label>
+                                            <select
+                                                value={editingProject.responsable}
+                                                onChange={(e) => setEditingProject({...editingProject, responsable: e.target.value})}
+                                            >
+                                                <option value="">Sin asignar</option>
+                                                {USUARIOS.map(u => <option key={u} value={u}>{u}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label>Fecha de inicio</label>
+                                                <input
+                                                    type="date"
+                                                    value={editingProject.fecha_inicio}
+                                                    onChange={(e) => setEditingProject({...editingProject, fecha_inicio: e.target.value})}
+                                                />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label>Fecha de vencimiento</label>
+                                                <input
+                                                    type="date"
+                                                    value={editingProject.fecha_vencimiento}
+                                                    onChange={(e) => setEditingProject({...editingProject, fecha_vencimiento: e.target.value})}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>URL (enlace)</label>
+                                            <input
+                                                type="url"
+                                                value={editingProject.url}
+                                                onChange={(e) => setEditingProject({...editingProject, url: e.target.value})}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Notas</label>
+                                            <textarea
+                                                value={editingProject.notas}
+                                                onChange={(e) => setEditingProject({...editingProject, notas: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Compartir con</label>
+                                            <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                                                {USUARIOS.map(u => (
+                                                    <label key={u} style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={(editingProject.compartir_con || []).includes(u)}
+                                                            onChange={(e) => {
+                                                                const updated = e.target.checked
+                                                                    ? [...(editingProject.compartir_con || []), u]
+                                                                    : (editingProject.compartir_con || []).filter(x => x !== u);
+                                                                setEditingProject({...editingProject, compartir_con: updated});
+                                                            }}
+                                                        />
+                                                        {u}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="form-actions">
+                                            <button className="btn" onClick={handleEditProyecto}>
+                                                <i className="ti ti-check"></i> Guardar
+                                            </button>
+                                            <button className="btn btn-secondary" onClick={() => setShowEditProjectModal(false)}>
+                                                <i className="ti ti-x"></i> Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                );
+            }
+
+            return (
+                <>
+                    <header>
+                        <div className="container">
+                            <div className="header-title">
+                                <i className="ti ti-briefcase"></i>
+                                <h1>Gestor de Proyectos</h1>
+                            </div>
+                            <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                                <div className="user-info">
+                                    <span>Usuario:</span>
+                                    <span className="user-badge">{currentUser}</span>
+                                    <button className="btn btn-secondary btn-small" onClick={changeUser}>
+                                        <i className="ti ti-switch"></i> Cambiar
+                                    </button>
+                                </div>
+                                <button className="btn" onClick={() => {
+                                    resetFormData();
+                                    setShowModal(true);
+                                }}>
+                                    <i className="ti ti-plus"></i> Nuevo Proyecto
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="container">
+                        {proyectos.length === 0 ? (
+                            <div className="empty-state" style={{marginTop: '80px'}}>
+                                <i className="ti ti-briefcase"></i>
+                                <h3>No hay proyectos compartidos contigo</h3>
+                                <p>Crea uno nuevo o pide que te compartan un proyecto</p>
+                            </div>
+                        ) : (
+                            <div className="projects-grid">
+                                {proyectos.map(proyecto => {
+                                    const tareasProyecto = tareas.filter(t => t.proyecto_id === proyecto.id);
+                                    const completadas = tareasProyecto.filter(t => t.completado).length;
+                                    const progreso = tareasProyecto.length > 0 ? Math.round((completadas / tareasProyecto.length) * 100) : 0;
+
+                                    return (
+                                        <div key={proyecto.id} className="project-card">
+                                            <i 
+                                                className="ti ti-pencil edit-icon"
+                                                onClick={() => {
+                                                    setEditingProject(proyecto);
+                                                    setShowEditProjectModal(true);
+                                                }}
+                                                title="Editar proyecto"
+                                            ></i>
+                                            
+                                            <div className="project-header">
+                                                <div style={{flex: 1}}>
+                                                    <h3>{proyecto.nombre}</h3>
+                                                    <span className={`badge ${getEstadoBadge(proyecto.estado)}`}>
+                                                        {proyecto.estado}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            {proyecto.descripcion && <p>{proyecto.descripcion}</p>}
+                                            
+                                            <div className="project-dates">
+                                                {proyecto.fecha_inicio && <div>📅 Inicio: {new Date(proyecto.fecha_inicio).toLocaleDateString('es-AR')}</div>}
+                                                {proyecto.fecha_vencimiento && <div>⏱️ Vencimiento: {new Date(proyecto.fecha_vencimiento).toLocaleDateString('es-AR')}</div>}
+                                            </div>
+
+                                            <div className="progress-container">
+                                                <div className="progress-label">
+                                                    <span>Progreso</span>
+                                                    <strong>{progreso}%</strong>
+                                                </div>
+                                                <div className="progress-bar">
+                                                    <div className="progress-fill" style={{width: progreso + '%'}}></div>
+                                                </div>
+                                                <div style={{fontSize: '12px', color: '#666', marginTop: '6px'}}>
+                                                    {completadas}/{tareasProyecto.length} tareas completadas
+                                                </div>
+                                            </div>
+
+                                            <div className="project-actions">
+                                                <button 
+                                                    className="btn"
+                                                    onClick={() => {
+                                                        setSelectedProyecto(proyecto);
+                                                        loadTareas(proyecto.id);
+                                                        setView('detail');
+                                                    }}
+                                                >
+                                                    <i className="ti ti-arrow-right"></i> Abrir
+                                                </button>
+                                                <button 
+                                                    className="btn btn-danger"
+                                                    onClick={() => handleDeleteProyecto(proyecto.id)}
+                                                    title="Eliminar proyecto"
+                                                >
+                                                    <i className="ti ti-trash"></i> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {showModal && (
+                            <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                    <h2>Crear Nuevo Proyecto</h2>
+                                    
+                                    <div className="form-group">
+                                        <label>Nombre del proyecto *</label>
+                                        <input
+                                            type="text"
+                                            value={formData.nombre}
+                                            onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                                            placeholder="Ej: Rediseño de sitio web"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Descripción</label>
+                                        <textarea
+                                            value={formData.descripcion}
+                                            onChange={(e) => setFormData({...formData, descripcion: e.target.value})}
+                                            placeholder="Detalles del proyecto..."
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Responsable</label>
+                                        <select
+                                            value={formData.responsable}
+                                            onChange={(e) => setFormData({...formData, responsable: e.target.value})}
+                                        >
+                                            <option value="">Sin asignar</option>
+                                            {USUARIOS.map(u => <option key={u} value={u}>{u}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Fecha de inicio</label>
+                                            <input
+                                                type="date"
+                                                value={formData.fecha_inicio}
+                                                onChange={(e) => setFormData({...formData, fecha_inicio: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Fecha de vencimiento</label>
+                                            <input
+                                                type="date"
+                                                value={formData.fecha_vencimiento}
+                                                onChange={(e) => setFormData({...formData, fecha_vencimiento: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Estado</label>
+                                            <select
+                                                value={formData.estado}
+                                                onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                                            >
+                                                <option>En progreso</option>
+                                                <option>Bloqueado</option>
+                                                <option>Completado</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Prioridad</label>
+                                            <select
+                                                value={formData.prioridad}
+                                                onChange={(e) => setFormData({...formData, prioridad: e.target.value})}
+                                            >
+                                                <option>Baja</option>
+                                                <option>Media</option>
+                                                <option>Alta</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>URL (enlace)</label>
+                                        <input
+                                            type="url"
+                                            value={formData.url}
+                                            onChange={(e) => setFormData({...formData, url: e.target.value})}
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Notas</label>
+                                        <textarea
+                                            value={formData.notas}
+                                            onChange={(e) => setFormData({...formData, notas: e.target.value})}
+                                            placeholder="Notas adicionales del proyecto..."
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Compartir con (selecciona al menos uno)</label>
+                                        <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                                            {USUARIOS.map(u => (
+                                                <label key={u} style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.compartir_con.includes(u)}
+                                                        onChange={(e) => {
+                                                            const updated = e.target.checked
+                                                                ? [...formData.compartir_con, u]
+                                                                : formData.compartir_con.filter(x => x !== u);
+                                                            setFormData({...formData, compartir_con: updated});
+                                                        }}
+                                                    />
+                                                    {u}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-actions">
+                                        <button className="btn" onClick={handleCreateProyecto}>
+                                            <i className="ti ti-check"></i> Crear Proyecto
+                                        </button>
+                                        <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                                            <i className="ti ti-x"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showEditProjectModal && editingProject && (
+                            <div className="modal-overlay" onClick={() => setShowEditProjectModal(false)}>
+                                <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                    <h2>Editar Proyecto</h2>
+                                    
+                                    <div className="form-group">
+                                        <label>Nombre del proyecto *</label>
+                                        <input
+                                            type="text"
+                                            value={editingProject.nombre}
+                                            onChange={(e) => setEditingProject({...editingProject, nombre: e.target.value})}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Descripción</label>
+                                        <textarea
+                                            value={editingProject.descripcion}
+                                            onChange={(e) => setEditingProject({...editingProject, descripcion: e.target.value})}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Responsable</label>
+                                        <select
+                                            value={editingProject.responsable}
+                                            onChange={(e) => setEditingProject({...editingProject, responsable: e.target.value})}
+                                        >
+                                            <option value="">Sin asignar</option>
+                                            {USUARIOS.map(u => <option key={u} value={u}>{u}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Fecha de inicio</label>
+                                            <input
+                                                type="date"
+                                                value={editingProject.fecha_inicio}
+                                                onChange={(e) => setEditingProject({...editingProject, fecha_inicio: e.target.value})}
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Fecha de vencimiento</label>
+                                            <input
+                                                type="date"
+                                                value={editingProject.fecha_vencimiento}
+                                                onChange={(e) => setEditingProject({...editingProject, fecha_vencimiento: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label>Estado</label>
+                                            <select
+                                                value={editingProject.estado}
+                                                onChange={(e) => setEditingProject({...editingProject, estado: e.target.value})}
+                                            >
+                                                <option>En progreso</option>
+                                                <option>Bloqueado</option>
+                                                <option>Completado</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label>Prioridad</label>
+                                            <select
+                                                value={editingProject.prioridad}
+                                                onChange={(e) => setEditingProject({...editingProject, prioridad: e.target.value})}
+                                            >
+                                                <option>Baja</option>
+                                                <option>Media</option>
+                                                <option>Alta</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>URL (enlace)</label>
+                                        <input
+                                            type="url"
+                                            value={editingProject.url}
+                                            onChange={(e) => setEditingProject({...editingProject, url: e.target.value})}
+                                            placeholder="https://..."
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Notas</label>
+                                        <textarea
+                                            value={editingProject.notas}
+                                            onChange={(e) => setEditingProject({...editingProject, notas: e.target.value})}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Compartir con</label>
+                                        <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+                                            {USUARIOS.map(u => (
+                                                <label key={u} style={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={(editingProject.compartir_con || []).includes(u)}
+                                                        onChange={(e) => {
+                                                            const updated = e.target.checked
+                                                                ? [...(editingProject.compartir_con || []), u]
+                                                                : (editingProject.compartir_con || []).filter(x => x !== u);
+                                                            setEditingProject({...editingProject, compartir_con: updated});
+                                                        }}
+                                                    />
+                                                    {u}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-actions">
+                                        <button className="btn" onClick={handleEditProyecto}>
+                                            <i className="ti ti-check"></i> Guardar
+                                        </button>
+                                        <button className="btn btn-secondary" onClick={() => setShowEditProjectModal(false)}>
+                                            <i className="ti ti-x"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
