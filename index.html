@@ -816,10 +816,27 @@
                     });
 
                     setProyectos(filtrados);
+                    
+                    // Cargar todas las tareas de todos los proyectos
+                    loadAllTareas();
                 } catch (error) {
                     console.error('Error loading proyectos:', error);
                 }
                 setLoading(false);
+            };
+
+            const loadAllTareas = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('tareas')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    setTareas(data || []);
+                } catch (error) {
+                    console.error('Error loading all tareas:', error);
+                }
             };
 
             const loadTareas = async (proyectoId) => {
