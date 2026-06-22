@@ -752,8 +752,8 @@
         }
 
         .user-buttons {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
 
@@ -793,7 +793,7 @@
         const SUPABASE_KEY = 'sb_publishable_j2sXGY7gDh74lbNAuGlFLA_T9CRpJ2Z';
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        const USUARIOS = ['JIA', 'OB', 'TA', 'LM', 'CO'];
+        const USUARIOS = ['JIA', 'OB', 'TA', 'LM', 'CO', 'VV', 'YM'];
 
         function App() {
             const [currentUser, setCurrentUser] = useState(null);
